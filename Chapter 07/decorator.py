@@ -66,3 +66,4 @@ f(42, 21)
 def g(x, y):
 	return x + y
 g(42, 21)
+
