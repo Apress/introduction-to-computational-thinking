@@ -65,3 +65,41 @@ def fib(n):
 for n in range(6):
     print(f"{n}! = {factorial(n)}, fib({n}) = {fib(n)}")
 print()
+
+
+# If you are wondering if we could make the trampoline part a decorator,
+# the answer is yes, but there is one complication. That will change what
+# the name of the recursion function refers to (we change the variable so it
+# refers to the wrapped function when we do that). You still need to use the
+# original function for the recursion. One way to achive this is to make the
+# function itself a parameter that we can bind in the function calls. In the
+# examples below, I have called it `rec`, and I make sure we pass it in the
+# wrapped function for the decorator.
+
+def trampoline(f):
+    def wrapper(*args, **kwargs):
+        kwargs['rec'] = f # make sure we have the recursive function
+        jumper = f(*args, **kwargs)
+        while callable(jumper):
+            jumper = jumper()
+        return jumper
+    wrapper.__name__ = f.__name__
+    return wrapper
+
+@trampoline
+def factorial(n, rec, cont = lambda x: x):
+    if n <= 1: return lambda: cont(1)
+    else: return lambda: rec(n - 1, rec, lambda x: lambda: cont(n * x))
+
+@trampoline
+def fib(n, rec, cont = lambda x: x):
+    if n == 0 or n == 1:
+        return lambda: cont(1)
+    else:
+        def new_cont(x):
+            return lambda: rec(n - 2, rec, lambda y: lambda: cont(x + y))
+        return lambda: rec(n - 1, rec, new_cont) 
+
+for n in range(6):
+    print(f"{n}! = {factorial(n)}, fib({n}) = {fib(n)}")
+print()
